@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lvmaoya/webSocket/index.dart';
 
+import 'Blue/index.dart';
 import 'SSE/index.dart';
 
 void main() {
@@ -57,7 +58,14 @@ class _MyHomePageState extends State<MyHomePage> {
                     builder: (BuildContext context) => const SSEExample(),
                   ));
                 },
-                child: const Text('SSEExample'))
+                child: const Text('SSEExample')),
+            TextButton(
+                onPressed: () {
+                  Navigator.of(context).push(MaterialPageRoute(
+                    builder: (BuildContext context) => const BleExample(),
+                  ));
+                },
+                child: const Text('BleExample'))
           ],
         ),
       ),
