@@ -3,18 +3,24 @@ import 'dart:io';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'package:flutter_zoom_drawer/flutter_zoom_drawer.dart';
+import 'package:lvmaoya/examples/esp32LightColor/index.dart';
 import 'package:lvmaoya/examples/generativeAi/index.dart';
 import 'package:lvmaoya/examples/logger/index.dart';
+import 'package:lvmaoya/examples/lottie/index.dart';
+import 'package:lvmaoya/examples/provider/index.dart';
 import 'package:lvmaoya/examples/wifi/index.dart';
+import 'package:provider/provider.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'examples/Blue/index.dart';
 import 'examples/SSE/index.dart';
+import 'examples/provider/lib/Counter.dart';
 import 'examples/sharedPreferences/index.dart';
 import 'examples/webSocket/index.dart';
 
 Future<void> main() async {
-  WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
-  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+  // WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  // FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
 
   await SentryFlutter.init(
     (options) {
@@ -27,10 +33,19 @@ Future<void> main() async {
       // Setting to 1.0 will profile 100% of sampled transactions:
       options.profilesSampleRate = 1.0;
     },
-    appRunner: () => runApp(MyApp()),
+    appRunner: () async {
+      // await Future.delayed(const Duration(seconds: 3));
+      // FlutterNativeSplash.remove();
+      runApp(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider(create: (_) => Counter()),
+          ],
+          child: const MyApp(),
+        ),
+      );
+    },
   );
-
-  FlutterNativeSplash.remove();
 }
 
 class MyApp extends StatelessWidget {
@@ -99,44 +114,95 @@ class _MyHomePageState extends State<MyHomePage> {
     ExampleBtn(const GenerativeAiExample(), "GenerativeAiExample"),
     ExampleBtn(const WifiExample(), "WifiExample"),
     ExampleBtn(const LoggerExample(), "LoggerExample"),
+    ExampleBtn(const LottieExample(), "LottieExample"),
+    ExampleBtn(const ProviderExample(), "ProviderExample"),
+    ExampleBtn(const ColorWheelPage(), "ColorWheelExample")
   ];
+  final ZoomDrawerController z = ZoomDrawerController();
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          widget.title,
+    return ZoomDrawer(
+        duration: const Duration(milliseconds: 500),
+        menuScreenTapClose: true,
+        controller: z,
+        openCurve: Curves.fastOutSlowIn,
+        moveMenuScreen: true,
+        // slideWidth: MediaQuery.of(context).size.width - 20,
+        overlayBlend: BlendMode.hardLight,
+        angle: 0,
+        mainScreenScale: 0,
+        mainScreenTapClose: true,
+        mainScreenOverlayColor: Colors.white.withOpacity(0.0),
+        overlayBlur: 1,
+        style: DrawerStyle.defaultStyle,
+        shrinkMainScreen: false,
+        boxShadow: null,
+        borderRadius: 0,
+        slideWidth: MediaQuery.of(context).size.width * 0.65,
+        menuScreenWidth: MediaQuery.of(context).size.width * 0.65,
+        menuBackgroundColor: Colors.blue,
+        menuScreen: Scaffold(
+          backgroundColor: Colors.blue,
+          body: const Column(
+            children: [
+              ListTile(
+                title: Text("hello"),
+              ),
+              ListTile(
+                title: Text("world"),
+              )
+            ],
+          ),
+          floatingActionButton: FloatingActionButton(
+            key: const Key('increment_floatingActionButton'),
+            onPressed: () => context.read<Counter>().increment(),
+            tooltip: 'Increment',
+            child: const Icon(Icons.add),
+          ),
         ),
-        leading: GestureDetector(
-          onTap: () {},
-          child: const Center(
-            child: ClipOval(
-              child: Image(
-                image: AssetImage("assets/avatar.jpg"),
-                width: 36,
-                height: 36,
+        mainScreen: Scaffold(
+          appBar: AppBar(
+            title: Text(
+              widget.title,
+            ),
+            leading: GestureDetector(
+              onTap: () {
+                z.toggle!();
+              },
+              child: const Center(
+                child: ClipOval(
+                  child: Image(
+                    image: AssetImage("assets/avatar.jpg"),
+                    width: 36,
+                    height: 36,
+                  ),
+                ),
               ),
             ),
           ),
-        ),
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-            children: btns
-                .map(
-                  (e) => TextButton(
-                      onPressed: () {
-                        Navigator.of(context).push(MaterialPageRoute(
-                          builder: (BuildContext context) => e.widget,
-                        ));
-                      },
-                      child: Center(
-                        child: Text(e.title),
-                      )),
-                )
-                .toList()),
-      ),
-    );
+          body: SingleChildScrollView(
+            child: Column(
+                children: btns
+                    .map(
+                      (e) => TextButton(
+                          onPressed: () {
+                            Navigator.of(context).push(MaterialPageRoute(
+                              builder: (BuildContext context) => e.widget,
+                            ));
+                          },
+                          child: Center(
+                            child: Text(e.title),
+                          )),
+                    )
+                    .toList()),
+          ),
+        ));
   }
 }
 
