@@ -1,8 +1,10 @@
-import 'dart:math';
-import 'dart:ui';
-
-import 'package:flutter/cupertino.dart';
+import 'dart:convert';
+import 'dart:io';
+import 'package:flutter_chat_ui/flutter_chat_ui.dart';
+import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:flutter/material.dart';
+import 'package:mqtt_client/mqtt_client.dart';
+import 'package:mqtt_client/mqtt_server_client.dart';
 
 class ColorWheelPage extends StatefulWidget {
   const ColorWheelPage({super.key});
@@ -12,86 +14,312 @@ class ColorWheelPage extends StatefulWidget {
 }
 
 class _ColorWheelPageState extends State<ColorWheelPage> {
-  Offset _currentPosition = Offset.zero;
-  Color _currentColor = Colors.white;
+  Color pickerColor = const Color(0xffffffff);
 
+  List<Color> colors = [
+    Colors.red,
+    Colors.pink,
+    Colors.purple,
+    Colors.deepPurple,
+    Colors.indigo,
+    Colors.blue,
+    Colors.lightBlue,
+    Colors.cyan,
+    Colors.teal,
+    Colors.green,
+    Colors.lightGreen,
+    Colors.lime,
+    Colors.yellow,
+    Colors.amber,
+    Colors.orange,
+    Colors.deepOrange,
+    Colors.brown,
+    Colors.grey,
+    Colors.blueGrey,
+    Colors.black,
+    Colors.redAccent,
+    Colors.greenAccent,
+    Colors.white,
+  ];
+
+  late MqttServerClient mqttClient;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    mqttClient = MqttServerClient.withPort(
+        'b9dfdd51.ala.cn-hangzhou.emqxsl.cn', 'flutter_client', 8883);
+    mqttClient.secure = true;
+    mqttClient.securityContext = SecurityContext.defaultContext;
+
+    mqttClient.onConnected = onConnected;
+    mqttClient.onDisconnected = onDisconnected;
+    mqttClient.onSubscribed = onSubscribed;
+    mqttClient.onUnsubscribed = onUnsubscribed;
+  }
+
+  void onConnected() {
+    EasyLoading.showToast("连接成功");
+    print('Connected');
+  }
+
+  void onDisconnected() {
+    print('Disconnected');
+  }
+
+  void onSubscribed(String topic) {
+    print('Subscribed to topic: $topic');
+  }
+
+  void onUnsubscribed(String? topic) {
+    print('Unsubscribed from topic: $topic');
+  }
+
+  //-------------control------------------------------
+
+  Future<void> onConnectBtnClick() async {
+    try {
+      await mqttClient.connect("lvmaoya", "king.sun1");
+    } catch (e) {
+      print('Exception occurred: $e');
+      mqttClient.disconnect();
+    }
+  }
+
+  Future<void> onSubscribeBtnClick() async {
+    mqttClient.subscribe("room/temp_humi", MqttQos.atMostOnce);
+    mqttClient.updates?.listen((List<MqttReceivedMessage<MqttMessage>> c) {
+      final MqttPublishMessage recMess = c[0].payload as MqttPublishMessage;
+      final String pt =
+          MqttPublishPayload.bytesToStringAsString(recMess.payload.message);
+      Map<String, dynamic> map = jsonDecode(pt);
+      debugPrint('服务器返回的数据信息-------------${map["Temp"]}');
+      double tempRes = map['Temp'];
+      double humiRes = map['Humi'];
+      if (tempRes != 100 && humiRes != 100) {
+        setState(() {
+          temp = tempRes;
+          humi = humiRes;
+        });
+      }
+    });
+  }
+
+  Future<void> onDisconnectBtnClick() async {
+    mqttClient.disconnect();
+  }
+
+  Future<void> onPublishBtnClick(String topic, String message) async {
+    final builder = MqttClientPayloadBuilder();
+    builder.addString(message);
+    mqttClient.publishMessage(topic, MqttQos.atMostOnce, builder.payload!);
+  }
+
+  onLedSwitchOnBtnClick() {
+    onPublishBtnClick("lvmaoya/iot",
+        '{"led": 1,"r": ${pickerColor.red},"g": ${pickerColor.green},"b": ${pickerColor.blue}}');
+  }
+
+  onLedSwitchOffBtnClick() {
+    onPublishBtnClick("lvmaoya/iot",
+        '{"led": 0,"r": ${pickerColor.red},"g": ${pickerColor.green},"b": ${pickerColor.blue}}');
+  }
+
+  onLedColorChangeBtnClick(value) {
+    setState(() => pickerColor = value);
+    onPublishBtnClick("lvmaoya/iot",
+        '{"led": 1,"r": ${pickerColor.red},"g": ${pickerColor.green},"b": ${pickerColor.blue}}');
+    debugPrint("${pickerColor.red},${pickerColor.green},${pickerColor.blue}");
+  }
+
+  onServoStartWithAngleBtnClick(double value) {
+    servoAngle = value;
+    setState(() {});
+  }
+
+  onServoStartBtnClick() {
+    onPublishBtnClick("lvmaoya/iot", '{"servo": ${servoAngle.toInt()}}');
+  }
+
+  onServoStopBtnClick() {}
+
+  double temp = 0.0;
+  double humi = 0.0;
+  double servoAngle = 0;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Esp32 S3 Blufi,Mqtt,Ble'),
-      ),
-      body: GestureDetector(
-        onPanUpdate: _handlePanUpdate,
-        child: Stack(
-          children: [
-            Center(
-              child: SizedBox(
-                width: 300,
-                height: 300,
-                child: CustomPaint(
-                  painter: ColorWheelPainter(),
-                ),
-              ),
-            ),
-            Positioned(
-              left: _currentPosition.dx - 10,
-              top: _currentPosition.dy - 10,
-              child: GestureDetector(
-                onPanUpdate: _handlePanUpdate,
-                child: CircleAvatar(
-                  radius: 10,
-                  backgroundColor: _currentColor,
-                ),
-              ),
-            ),
-          ],
+        appBar: AppBar(
+          title: const Text('Esp32 S3 Blufi,Mqtt,Ble'),
         ),
-      ),
-    );
-  }
-
-  void _handlePanUpdate(DragUpdateDetails details) {
-    final RenderBox box = context.findRenderObject() as RenderBox;
-    final Offset localPosition = box.globalToLocal(details.globalPosition);
-    final double radius = box.size.width / 2;
-    final double angle = atan2(localPosition.dy - radius, localPosition.dx - radius);
-    final double distance = sqrt(pow(localPosition.dx - radius, 2) + pow(localPosition.dy - radius, 2));
-
-    if (distance <= radius) {
-      setState(() {
-        _currentPosition = Offset(
-          radius + cos(angle) * distance,
-          radius + sin(angle) * distance,
-        );
-        _currentColor = HSVColor.fromAHSV(1, angle * 180 / pi, distance / radius, 1).toColor();
-        print('RGB: $_currentColor');
-      });
-    }
-  }
-}
-
-class ColorWheelPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final double radius = size.width / 2;
-    final Rect rect = Rect.fromLTWH(0, 0, size.width, size.height);
-
-    final Gradient gradient = SweepGradient(
-      startAngle: 0,
-      endAngle: 2 * pi,
-      colors: List.generate(360, (index) => HSVColor.fromAHSV(1, index.toDouble(), 1, 1).toColor()),
-    );
-
-    final Paint paint = Paint()
-      ..shader = gradient.createShader(rect)
-      ..style = PaintingStyle.fill;
-
-    canvas.drawCircle(Offset(radius, radius), radius, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return false;
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              const Row(
+                children: [
+                  Text("mqtt服务控制：",
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold, color: primary))
+                ],
+              ),
+              const Divider(
+                height: 20,
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  TextButton(
+                      onPressed: onConnectBtnClick,
+                      child: const Text("连接至EMQX")),
+                  TextButton(
+                      onPressed: onSubscribeBtnClick,
+                      child: const Text("订阅主题")),
+                ],
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  TextButton(
+                      onPressed: () {
+                        onPublishBtnClick("test", "hello world");
+                      },
+                      child: const Text("发布主题")),
+                  TextButton(
+                      onPressed: onDisconnectBtnClick,
+                      child: const Text("取消连接服务")),
+                ],
+              ),
+              const SizedBox(
+                height: 30,
+              ),
+              const Row(
+                children: [
+                  Text("传感器数据采集：",
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold, color: primary))
+                ],
+              ),
+              const Divider(
+                height: 20,
+              ),
+              Row(
+                children: [
+                  const Text(
+                    "当前室内温度：",
+                  ),
+                  Text("$temp℃",
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, color: primary)),
+                  Expanded(
+                    child: Container(),
+                  ),
+                  const Text(
+                    "当前室内湿度：",
+                  ),
+                  Text("$humi%",
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, color: primary)),
+                ],
+              ),
+              const SizedBox(
+                height: 30,
+              ),
+              const Row(
+                children: [
+                  Text("单片机灯光控制：",
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold, color: primary))
+                ],
+              ),
+              const Divider(
+                height: 20,
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  TextButton(
+                      onPressed: onLedSwitchOnBtnClick,
+                      child: const Text("开灯")),
+                  TextButton(
+                      onPressed: onLedSwitchOffBtnClick,
+                      child: const Text("关灯")),
+                ],
+              ),
+              Wrap(
+                children: colors.asMap().entries.map((e) {
+                  int index = e.key;
+                  Color value = e.value;
+                  return GestureDetector(
+                    behavior: HitTestBehavior.translucent,
+                    onTap: () => onLedColorChangeBtnClick(value),
+                    child: Container(
+                      width: 36,
+                      height: 24,
+                      margin: const EdgeInsets.only(top: 8, right: 10),
+                      decoration: BoxDecoration(
+                          color: value,
+                          border: Border.all(
+                              width: 2,
+                              color: pickerColor == value
+                                  ? Colors.black
+                                  : Colors.transparent),
+                          borderRadius:
+                              const BorderRadius.all(Radius.circular(8))),
+                    ),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(
+                height: 30,
+              ),
+              const Row(
+                children: [
+                  Text("伺服电机控制：",
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold, color: primary))
+                ],
+              ),
+              const Divider(
+                height: 20,
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  TextButton(
+                      onPressed: onServoStartBtnClick, child: const Text("转动")),
+                  TextButton(
+                      onPressed: onServoStopBtnClick, child: const Text("停止")),
+                ],
+              ),
+              Row(
+                children: [
+                  Text("角度：${servoAngle.toInt()}度"),
+                  Expanded(
+                      child: SliderTheme(
+                          data: Theme.of(context).sliderTheme.copyWith(
+                                trackHeight: 12,
+                                overlayColor: Colors.transparent,
+                                activeTickMarkColor: Colors.transparent,
+                                inactiveTickMarkColor: Colors.transparent,
+                                thumbColor: Colors.white,
+                              ),
+                          child: Slider(
+                            value: servoAngle,
+                            onChanged: (double value) {
+                              servoAngle = value;
+                              setState(() {});
+                            },
+                            onChangeEnd: (value) =>
+                                onServoStartWithAngleBtnClick(value),
+                            max: 360,
+                            min: -360,
+                          )))
+                ],
+              )
+            ],
+          ),
+        ));
   }
 }

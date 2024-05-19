@@ -53,6 +53,9 @@ dependencies:
   flutter_markdown: ^0.7.1
   image_picker: ^1.1.1
   sqflite: ^2.3.3+1
+  mqtt_client: ^10.2.1
+  flutter_colorpicker: ^1.0.3
+  flutter_easyloading: ^3.0.5
 
 
 

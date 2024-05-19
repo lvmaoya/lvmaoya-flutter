@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_zoom_drawer/flutter_zoom_drawer.dart';
 import 'package:lvmaoya/examples/esp32LightColor/index.dart';
@@ -93,6 +94,7 @@ class MyApp extends StatelessWidget {
       ),
       themeMode: ThemeMode.system,
       home: const MyHomePage(title: 'Flutter Demos'),
+      builder: EasyLoading.init(),
     );
   }
 }
@@ -116,7 +118,7 @@ class _MyHomePageState extends State<MyHomePage> {
     ExampleBtn(const LoggerExample(), "LoggerExample"),
     ExampleBtn(const LottieExample(), "LottieExample"),
     ExampleBtn(const ProviderExample(), "ProviderExample"),
-    ExampleBtn(const ColorWheelPage(), "ColorWheelExample")
+    ExampleBtn(const ColorWheelPage(), "MqttExample")
   ];
   final ZoomDrawerController z = ZoomDrawerController();
   @override
