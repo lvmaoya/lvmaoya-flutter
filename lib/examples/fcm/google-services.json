@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "987284204481",
+    "project_id": "lvmaoya-97187",
+    "storage_bucket": "lvmaoya-97187.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:987284204481:android:56040bbe1c50e4ac589d40",
+        "android_client_info": {
+          "package_name": "com.sunjianxiang.lvmaoya"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCwfMZWlWmX4sA3X_qpqsdXMEVN5NwwAy0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

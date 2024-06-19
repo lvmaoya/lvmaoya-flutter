@@ -1,12 +1,14 @@
-import 'dart:io';
-
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
-import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_zoom_drawer/flutter_zoom_drawer.dart';
 import 'package:lvmaoya/examples/esp32LightColor/index.dart';
+import 'package:lvmaoya/examples/fcm/getui.dart';
 import 'package:lvmaoya/examples/generativeAi/index.dart';
+import 'package:lvmaoya/examples/localNotify/index.dart';
 import 'package:lvmaoya/examples/logger/index.dart';
 import 'package:lvmaoya/examples/lottie/index.dart';
 import 'package:lvmaoya/examples/provider/index.dart';
@@ -15,28 +17,35 @@ import 'package:provider/provider.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'examples/Blue/index.dart';
 import 'examples/SSE/index.dart';
+import 'examples/fcm/firebase_fn.dart';
+import 'examples/fcm/firebase_options.dart';
+import 'examples/fcm/index.dart';
 import 'examples/provider/lib/Counter.dart';
 import 'examples/sharedPreferences/index.dart';
 import 'examples/webSocket/index.dart';
 
 Future<void> main() async {
-  // WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
-  // FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
-
+  WidgetsFlutterBinding.ensureInitialized();
+  initFireBase();
+  // 初始化 FlutterLocalNotificationsPlugin
+  final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+  final initializationSettings = InitializationSettings(
+    android: AndroidInitializationSettings('app_icon'),
+    // iOS: IOSInitializationSettings(
+    //   requestAlertPermission: false,
+    //   requestBadgePermission: false,
+    //   requestSoundPermission: false,
+    // ),
+  );
+  flutterLocalNotificationsPlugin.initialize(initializationSettings);
   await SentryFlutter.init(
     (options) {
       options.dsn =
           'https://909c4eb9e0a731298c4de53249b89589@o4507151999172608.ingest.us.sentry.io/4507152004087808';
-      // Set tracesSampleRate to 1.0 to capture 100% of transactions for performance monitoring.
-      // We recommend adjusting this value in production.
       options.tracesSampleRate = 1.0;
-      // The sampling rate for profiling is relative to tracesSampleRate
-      // Setting to 1.0 will profile 100% of sampled transactions:
       options.profilesSampleRate = 1.0;
     },
     appRunner: () async {
-      // await Future.delayed(const Duration(seconds: 3));
-      // FlutterNativeSplash.remove();
       runApp(
         MultiProvider(
           providers: [
@@ -47,6 +56,17 @@ Future<void> main() async {
       );
     },
   );
+}
+
+initFireBase() async {
+  // 初始化firebase云消息推送
+  try {
+    await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform);
+    await FirebaseService().initNotifications();
+  } catch (e) {
+    debugPrint("error:$e");
+  }
 }
 
 class MyApp extends StatelessWidget {
@@ -107,6 +127,25 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
+Route _createRoute() {
+  return PageRouteBuilder(
+    pageBuilder: (context, animation, secondaryAnimation) =>
+        const LocalNotify(),
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      const begin = Offset(1.0, 0.0);
+      const end = Offset.zero;
+      const curve = Curves.ease;
+
+      var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+
+      return SlideTransition(
+        position: animation.drive(tween),
+        child: child,
+      );
+    },
+  );
+}
+
 class _MyHomePageState extends State<MyHomePage> {
   List<ExampleBtn> btns = [
     ExampleBtn(const WebSocketExample(), "WebSocketExample"),
@@ -118,12 +157,14 @@ class _MyHomePageState extends State<MyHomePage> {
     ExampleBtn(const LoggerExample(), "LoggerExample"),
     ExampleBtn(const LottieExample(), "LottieExample"),
     ExampleBtn(const ProviderExample(), "ProviderExample"),
-    ExampleBtn(const ColorWheelPage(), "MqttExample")
+    ExampleBtn(const ColorWheelPage(), "MqttExample"),
+    ExampleBtn(const MessagingExample(), "FirebaseMessagePushExample"),
+    ExampleBtn(const GeTui(), "GeTuiMessagePushExample"),
+    ExampleBtn(const LocalNotify(), "LocalNotifyExample")
   ];
   final ZoomDrawerController z = ZoomDrawerController();
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
   }
 
@@ -194,9 +235,10 @@ class _MyHomePageState extends State<MyHomePage> {
                     .map(
                       (e) => TextButton(
                           onPressed: () {
-                            Navigator.of(context).push(MaterialPageRoute(
-                              builder: (BuildContext context) => e.widget,
-                            ));
+                            // Navigator.of(context).push(MaterialPageRoute(
+                            //   builder: (BuildContext context) => e.widget,
+                            // ));
+                            Navigator.of(context).push(_createRoute());
                           },
                           child: Center(
                             child: Text(e.title),
