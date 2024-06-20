@@ -424,14 +424,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.2.0"
-  getuiflut:
-    dependency: "direct main"
-    description:
-      name: getuiflut
-      sha256: "1e5dfdaf98db45dc7cd966e9714ea5900881c771b6cf97153c01317087f81e08"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.2.28"
   getwidget:
     dependency: "direct main"
     description:
@@ -560,6 +552,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.19.0"
+  jpush_flutter:
+    dependency: "direct main"
+    description:
+      name: jpush_flutter
+      sha256: "9a738f3a863039fe9e87d5d25690ff504181c735c3c05f54f34c5b6ec2b5b462"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.0.3"
   js:
     dependency: transitive
     description:

@@ -21,7 +21,7 @@ class _LoggerExampleState extends State<LoggerExample> {
     // TODO: implement initState
     super.initState();
     print(
-        'Run with either `dart example/main.dart` or `dart --enable-asserts example/main.dart`.');
+        'Run with either `dart example/main2.dart` or `dart --enable-asserts example/main2.dart`.');
     demo();
   }
 
