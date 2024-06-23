@@ -20,6 +20,7 @@ import 'examples/Blue/index.dart';
 import 'examples/SSE/index.dart';
 
 import 'examples/messagePush/fcm/firebase_options.dart';
+import 'examples/messagePush/jiGuang/jg_util.dart';
 import 'examples/provider/lib/Counter.dart';
 import 'examples/sharedPreferences/index.dart';
 import 'examples/webSocket/index.dart';
@@ -29,6 +30,7 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // initFireBase();
+  JPushUtil().initPlatformState();
   await SentryFlutter.init(
     (options) {
       options.dsn =

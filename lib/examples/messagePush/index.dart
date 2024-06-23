@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+
+import 'jiGuang/index.dart';
+
 class MessagingExample extends StatefulWidget {
   const MessagingExample({super.key});
 
@@ -13,18 +16,19 @@ class _MessagingExampleState extends State<MessagingExample> {
         appBar: AppBar(
           title: const Text('Animation control'),
         ),
-        body:SingleChildScrollView(
+        body: SingleChildScrollView(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              TextButton(onPressed: (){
-                Navigator.of(context).push(MaterialPageRoute(
-                  builder: (BuildContext context) => e.widget,
-                ));
-              }, child: Text("极光推送"))
+              TextButton(
+                  onPressed: () {
+                    Navigator.of(context).push(MaterialPageRoute(
+                      builder: (BuildContext context) => JGMessagePush(),
+                    ));
+                  },
+                  child: Text("极光推送"))
             ],
           ),
-        )
-    );
+        ));
   }
 }

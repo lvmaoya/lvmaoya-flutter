@@ -1,8 +1,7 @@
+
+
 plugins {
     id "com.android.application"
-    // START: FlutterFire Configuration
-    id 'com.google.gms.google-services'
-    // END: FlutterFire Configuration
     id "kotlin-android"
     id "dev.flutter.flutter-gradle-plugin"
 }
@@ -35,26 +34,62 @@ android {
         targetCompatibility JavaVersion.VERSION_1_8
     }
 
+    signingConfigs {
+        release {
+            keyAlias 'lvmaoya'
+            keyPassword '12345678'
+            storeFile file('lvmaoya.jks')
+            storePassword '12345678'
+        }
+        debug {
+            keyAlias 'lvmaoya'
+            keyPassword '12345678'
+            storeFile file('lvmaoya.jks')
+            storePassword '12345678'
+        }
+    }
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId "com.sunjianxiang.lvmaoya"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
         minSdkVersion 21
         targetSdkVersion flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
+
+        ndk {
+            //选择要添加的对应 cpu 类型的 .so 库。
+            abiFilters 'armeabi', 'armeabi-v7a', 'arm64-v8a','x86', 'x86_64', 'mips', 'mips64'
+        }
+        manifestPlaceholders = [
+                applicationName: "android.app.Application",
+                JPUSH_PKGNAME : applicationId,
+                JPUSH_APPKEY : "590951ceb353e55c81f317f6", // NOTE: JPush 上注册的包名对应的 Appkey.
+                JPUSH_CHANNEL : "developer-default", //暂时填写默认值即可.
+        ]
     }
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
+//            manifestPlaceholders = [applicationName: "com.sunjianxiang.lvmaoya"]
         }
+//        debug {
+//            manifestPlaceholders = [applicationName: "com.sunjianxiang.lvmaoya"]
+//        }
+//
+//        build {
+//            manifestPlaceholders = [applicationName: "com.sunjianxiang.lvmaoya"]
+//        }
     }
 }
 
 flutter {
     source '../..'
 }
+dependencies {
+    // 极光推送  'cn.jiguang.sdk:jpush:5.2.3' 和 'cn.jiguang.sdk.plugin:huawei:5.2.3' 版本需一致
+    implementation 'cn.jiguang.sdk:jpush:5.2.3'
+    implementation 'com.huawei.agconnect:agconnect-core:1.8.1.300'
+    implementation 'com.huawei.hms:push:6.12.0.300'
+    implementation 'cn.jiguang.sdk.plugin:huawei:5.2.3' // 这里版本一定要和极光插件版本一致！！！
+}
+apply plugin: 'com.huawei.agconnect'
